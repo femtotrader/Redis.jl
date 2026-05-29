@@ -11,15 +11,6 @@ MbedTLS = "739be429-bea8-5141-9913-cc70e7f3736d"
 [compat]
 julia = "1.6"
 Dates = "1.6"
-# RiftSim fork (v3.0.0 + this single-line compat widening): bumped
-# DataStructures from "^0.18" to "0.18, 0.19" so this package composes
-# with ModelingToolkitBase 1.x → Symbolics 7 → MultivariatePolynomials
-# 0.5, which transitively requires DataStructures 0.19. Redis.jl's
-# actual `OrderedDict`/etc. usage is API-stable across the 0.18 → 0.19
-# boundary — the widened compat is a no-op functionally. Based on
-# upstream's tagged v3.0.0; deliberately NOT including the unreleased
-# cluster-support changes from upstream master, which trip a precompile
-# method-overwrite check.
 DataStructures = "0.18, 0.19"
 MbedTLS = "0.6.8, 0.7, 1"
 Sockets = "1.6"
