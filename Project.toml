@@ -11,7 +11,7 @@ MbedTLS = "739be429-bea8-5141-9913-cc70e7f3736d"
 [compat]
 julia = "1.6"
 Dates = "1.6"
-DataStructures = "^0.18"
+DataStructures = "0.18, 0.19"
 MbedTLS = "0.6.8, 0.7, 1"
 Sockets = "1.6"
 
