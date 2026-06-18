@@ -27,7 +27,7 @@ const CLUSTER_MULTI_KEY_COMMANDS = Set([
     "eval", "evalsha",
 
     # Server commands - need to broadcast to all nodes
-    "flushall", "flushdb", "_time",
+    "flushall", "flushdb",
 
     # Pub/Sub commands - need special handling
     "publish"

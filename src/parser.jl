@@ -2,8 +2,6 @@
 Formatting of incoming Redis Replies
 """
 
-include("connection.jl")
-
 function getline(t::Transport.RedisTransport)
     l = chomp(Transport.read_line(t))
     length(l) > 1 || throw(ProtocolException("Invalid response received: $l"))
