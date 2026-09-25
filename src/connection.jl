@@ -49,7 +49,7 @@ mutable struct RedisClusterConnection <: RedisConnectionBase
     startup_nodes::Vector{Tuple{String, Int}}
     password::AbstractString
     db::Integer
-    sslconfig::Union{MbedTLS.SSLConfig, Nothing}
+    sslconfig::Union{TLSConfig, Nothing}
     # Node connection pool: (host, port) -> RedisConnection
     node_connections::Dict{Tuple{String, Int}, RedisConnection}
 end
@@ -57,7 +57,7 @@ end
 Transport.get_sslconfig(s::RedisConnectionBase) = Transport.get_sslconfig(s.transport)
 Transport.get_sslconfig(s::RedisClusterConnection) = s.sslconfig
 
-function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0, sslconfig=nothing)
+function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0, sslconfig::Transport.SSLConfigArg=nothing)
     try
         connection = RedisConnection(
             host,
@@ -67,12 +67,12 @@ function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0, sslco
             Transport.transport(host, port, sslconfig)
         )
         on_connect(connection)
-    catch
-        throw(ConnectionException("Failed to connect to Redis server"))
+    catch e
+        throw(ConnectionException("Failed to connect to Redis server: $(sprint(showerror, e))"))
     end
 end
 
-function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0, sslconfig=nothing)
+function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0, sslconfig::Transport.SSLConfigArg=nothing)
     try
         sentinel_connection = SentinelConnection(
             host,
@@ -82,8 +82,8 @@ function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0, s
             Transport.transport(host, port, sslconfig)
         )
         on_connect(sentinel_connection)
-    catch
-        throw(ConnectionException("Failed to connect to Redis sentinel"))
+    catch e
+        throw(ConnectionException("Failed to connect to Redis sentinel: $(sprint(showerror, e))"))
     end
 end
 
@@ -97,8 +97,8 @@ function TransactionConnection(parent::RedisConnection; sslconfig=Transport.get_
             Transport.transport(parent.host, parent.port, sslconfig)
         )
         on_connect(transaction_connection)
-    catch
-        throw(ConnectionException("Failed to create transaction"))
+    catch e
+        throw(ConnectionException("Failed to create transaction: $(sprint(showerror, e))"))
     end
 end
 
@@ -113,8 +113,8 @@ function PipelineConnection(parent::RedisConnection; sslconfig=Transport.get_ssl
             0
         )
         on_connect(pipeline_connection)
-    catch
-        throw(ConnectionException("Failed to create pipeline"))
+    catch e
+        throw(ConnectionException("Failed to create pipeline: $(sprint(showerror, e))"))
     end
 end
 
@@ -130,8 +130,8 @@ function SubscriptionConnection(parent::SubscribableConnection; sslconfig=Transp
             Transport.transport(parent.host, parent.port, sslconfig)
         )
         on_connect(subscription_connection)
-    catch
-        throw(ConnectionException("Failed to create subscription"))
+    catch e
+        throw(ConnectionException("Failed to create subscription: $(sprint(showerror, e))"))
     end
 end
 
@@ -375,7 +375,7 @@ builds an internal mapping of hash slots to cluster nodes.
   At least one node must be provided and reachable.
 - `password::AbstractString=""`: Authentication password (optional)
 - `db::Integer=0`: Database number, typically 0 for cluster mode (optional)
-- `sslconfig::Union{MbedTLS.SSLConfig, Nothing}=nothing`: SSL configuration (optional)
+- `sslconfig::Union{TLSConfig, OpenSSL.SSLContext, Nothing}=nothing`: TLS configuration (optional), see [`TLSConfig`](@ref)
 
 # Returns
 - `RedisClusterConnection`: Initialized cluster connection object
@@ -403,10 +403,10 @@ cluster = RedisClusterConnection(
     password="mypassword"
 )
 
-# With SSL
+# With TLS
 cluster = RedisClusterConnection(
     startup_nodes=[("127.0.0.1", 7000)],
-    sslconfig=MbedTLS.SSLConfig()
+    sslconfig=TLSConfig(cacert="/path/to/ca.crt")
 )
 ```
 """
@@ -414,7 +414,7 @@ function RedisClusterConnection(;
     startup_nodes::Vector{Tuple{String,Int}},
     password::AbstractString="",
     db::Integer=0,
-    sslconfig::Union{MbedTLS.SSLConfig,Nothing}=nothing
+    sslconfig::Transport.SSLConfigArg=nothing
 )
     if isempty(startup_nodes)
         throw(ArgumentError("startup_nodes cannot be empty"))
@@ -426,7 +426,7 @@ function RedisClusterConnection(;
         startup_nodes,
         password,
         db,
-        sslconfig,
+        Transport.as_tlsconfig(sslconfig),
         Dict{Tuple{String,Int},RedisConnection}()  # node_connections
     )
 

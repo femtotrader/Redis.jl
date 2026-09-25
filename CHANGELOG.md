@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 4.0.0
+
+- **BREAKING**: TLS connections now use [OpenSSL.jl](https://github.com/JuliaWeb/OpenSSL.jl) instead of MbedTLS.jl, which is no longer maintained. The `sslconfig` keyword argument of `RedisConnection`, `SentinelConnection` and `RedisClusterConnection` now takes a `Redis.TLSConfig` (or an `OpenSSL.SSLContext`) instead of a `MbedTLS.SSLConfig`. `TLSConfig(; cacert, clientcert, clientkey, verify)` covers the common cases without touching OpenSSL directly.
+- As before, TLS connections send the server name (SNI) and, when `verify=true` and the host is not an IP address, check that the server certificate matches the hostname. A peer that closes the connection mid-reply now raises an error (`EOFError`, or `Base.IOError` when the peer sent a TLS close_notify) instead of returning a truncated reply.
+
 ## 3.0.0
 
 - **BREAKING**: `evalscript` method signature is now changed to take `keys` and `args` as separate arguments. (Ref: https://github.com/JuliaDatabases/Redis.jl/pull/109)
